@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Canvas | Estados</title>
+	<meta charset="utf-8">
+	<style>
+		body{
+			width: 600px;
+			margin: 0 auto;
+		}
+		canvas{
+			background-color: green;
+			border: solid yellow 3px;
+		}
+	</style>
+	<script>
+	window.onload=function() {
+		canvas = document.getElementById("canvas");
+		if (canvas && canvas.getContext) {
+			ctx = canvas.getContext("2d");
+			if (ctx) {
+				//Definimos colores
+				ctx.fillStyle = "yellow";
+				ctx.strokeStyle = "#ff0000";
+				ctx.lineWidth = 5;
+				//x,y,w,h
+				ctx.fillRect(50,50,100,100);
+				ctx.strokeRect(50,50,100,100);
+
+				//Guardamos configuración
+				ctx.save();
+
+				//Cambiar color de relleno
+				ctx.fillStyle = "orange";
+				ctx.strokeStyle = "#0000ff";
+				ctx.lineWidth = 15;
+				ctx.fillRect(200,50,100,100);
+				ctx.strokeRect(200,50,100,100);
+
+				//Restauramos valores
+				ctx.restore();
+				ctx.fillRect(350,50,100,100);
+				ctx.strokeRect(350,50,100,100);
+
+			} else {
+				alert("Tu navegador NO soporta la etiqueta canvas");
+			} 
+		}
+	}
+	</script>
+</head>
+<body>
+<canvas id="canvas" width="600" height="400">
+	Tu navegador no soporta la etiqueta canvas
+</canvas>
+</body>
+</html>
