@@ -1,0 +1,15 @@
+* {
+    margin: 0px;
+    padding: 0px;
+    box-sizing: border-box;
+}
+
+body{
+    width: 600px;
+    margin: 50px auto;
+}
+
+canvas {
+    background-color: rgb(213, 243, 195);
+    border: 3px solid rgba(71, 70, 164, 0.612);
+}

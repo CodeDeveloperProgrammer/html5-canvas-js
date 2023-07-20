@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>CANVAS Memoria Imágenes</title>
+<script src="js/objetos.js"></script>
+<style>
+body{
+	width:960px;
+	margin:0 auto;
+}
+h1{
+	text-align:center;
+}
+#miCanvas{
+	border:dotted 2px black;
+	background:#cccccc;	
+}
+</style>
+<script>
+/*** Variables ****/
+var ctx, canvas;
+var primerCarta = true;
+var cartaPrimera, cartaSegunda;
+var colorDelante = "yellow";
+var colorAtras = "blue";
+var colorCanvas = "green";
+var inicioX = 250;
+var inicioY = 40;
+var cartaMargen = 1;
+var cartaLon = 30;
+var cartaAncho = 85; //100;
+var cartaLargo = 120; //140;
+var cartas_array = new Array();
+var iguales = false;
+var cartas = 0;
+var bandera = true;
+var nota1, nota2, nota3, nota4, nota5;
+var pares = [ 
+["afrodita1.png", "afrodita1.png"],
+["grito.jpg", "grito.jpg"],
+["klimt.png","klimt.png"],
+["vanGogh.png", "vanGogh.png"],
+["vanGogh2.jpg", "vanGogh2.jpg"],
+["vanGogh3.jpg", "vanGogh3.jpg"],
+["vanGogh4.jpg", "vanGogh4.jpg"],
+["vanGogh5.jpg", "vanGogh5.jpg"],
+["vanGogh6.jpg", "vanGogh6.jpg"],
+["vanGogh7.jpg", "vanGogh7.jpg"]
+];
+/***** OBJETOS ******/
+var gameOver1_txt = new Texto(110,200, "¡Lo hiciste muy bien!", "white", "bold 80px Comic",false);
+var gameOver2_txt = new Texto(110,100, "Se terminó el tiempo,", "white", "bold 80px Comic",false);
+var gameOver3_txt = new Texto(135,200, "vuélvelo a intentar.", "white", "bold 80px Comic",false);
+var gameOver4_txt = new Texto(415,295, "Jugar de nuevo", "white", "bold 20px Comic",false);
+var gameOver1_rec = new Rectangulo(100,120,740,120,30, colorAtras, "black");
+var gameOver2_rec = new Rectangulo(100,20,750,220,30, colorAtras, "black");
+var final_btn = new Elemento(380,260, 200, 60);
+//
+//Pantalla de inicio
+//
+var inicio_txt = new Texto(425,245, "Iniciar juego", "white", "bold 20px Comic",false);
+var inicio_btn = new Elemento(380,210, 200, 60);
+var caratula;
+//
+//Reloj
+//
+var reloj = new Reloj(2,480, "white", 710,40,20,480, 60*2);
+//
+//Marcador
+//
+var marcador_txt = new Texto(50,430, "Pares encontrados", "white", "bold 20px Comic",false);
+var marcador_rec = new Rectangulo(30, 400, 200, 120, 20, colorAtras, "black");
+var marcador = new Marcador(marcador_rec, marcador_txt, "bold 60px Comic", "white");
+//
+//Instrucciones
+//
+var instrucciones_rec = new Rectangulo(130, 550, 700, 40,20, "rgba(255,255,255,0.7", "black");
+var instrucciones_txt = new Texto(230,575, "Encuentra el par de cartas antes de que termine el tiempo", "#0082d9", "bold 20px Comic",false);
+var instrucciones = new Instrucciones(instrucciones_rec, instrucciones_txt);
+/***********
+FUNCIONES 
+************/
+function dibujaCarta(){
+	//ctx.fillStyle = colorAtras;
+	//ctx.fillRect(this.x, this.y, this.ancho, this.largo);
+	//
+	var imagen = new Image();
+	imagen.src = "images/rombos.jpg";
+	var xx = this.x, yy = this.y, alto = this.largo, ancho = this.ancho;
+	imagen.onload = function(){
+		ctx.drawImage(imagen, xx,yy, ancho, alto);
+	}	
+}
+function tablero(){
+	var i;
+	var carta;
+	var x = inicioX;
+	var y = inicioY;
+	var renglon = 0, columna = 0;
+	var numColumnas = 5;
+	var alto;
+	cartas_array = [];
+	for(i=0; i<pares.length; i++){
+		//
+		//Alto de la carta
+		//
+		alto = (cartaLargo+cartaMargen)*renglon;
+		//
+		img = "imagenes/"+pares[i][0];
+		carta = new Carta(x, y+alto, cartaAncho, cartaLargo, img, i);
+		cartas_array.push(carta);
+		carta.dibuja();
+		//
+		//Creamos la segunda carta
+		//
+		alto = (cartaLargo+cartaMargen)*(renglon+1);
+		//
+		img = "imagenes/"+pares[i][1];
+		carta = new Carta(x, y+alto, cartaAncho, cartaLargo, img, i);
+		cartas_array.push(carta);
+		carta.dibuja();
+		//Aumentamos el valos de x
+		x += cartaAncho + cartaMargen;
+		columna++;
+		if(columna==numColumnas){
+			columna = 0;
+			renglon +=2;
+			x = inicioX;
+		}
+	}
+}
+function barajea(){
+	var i, j, k;
+	var temporalInfo, temporalImg;
+	var lon = cartas_array.length;
+	for(j=0; j<lon*3; j++){
+		i = Math.floor(Math.random()*lon);
+		k = Math.floor(Math.random()*lon);	
+		//
+		temporalInfo = cartas_array[i].info;
+		temporalImg = cartas_array[i].img;
+		//
+		cartas_array[i].info = cartas_array[k].info;
+		cartas_array[i].img = cartas_array[k].img;
+		//
+		cartas_array[k].info = temporalInfo;
+		cartas_array[k].img = temporalImg;
+	}
+}
+function ajusta(xx, yy){
+	var posCanvas = canvas.getBoundingClientRect();
+	var x = xx - posCanvas.left;
+	var y = yy - posCanvas.top;
+	return {x:x, y:y}
+}
+function selecciona(e){
+	//
+	if(!bandera) return;
+	//
+	nota4.play();
+	var pos = ajusta(e.clientX, e.clientY);
+	//alert(pos.x+", "+pos.y);
+	for(var i=0; i<cartas_array.length; i++){
+		var carta = cartas_array[i];
+		if(carta.x > 0){
+			if(
+			(pos.x > carta.x) && 
+			(pos.x < carta.x+carta.ancho) && 
+			(pos.y > carta.y) && 
+			(pos.y < carta.y+carta.largo)){	
+				if((primerCarta)||(i!=cartaPrimera)) break;	
+			}
+		}
+	}
+	//Encontramos la carta
+	if(i<cartas_array.length){
+		if(primerCarta){
+			cartaPrimera = i;
+			primerCarta = false;
+			pinta(carta);
+		} else {
+			bandera = false;
+			cartaSegunda = i;
+			pinta(carta);
+			primerCarta = true;
+			if(cartas_array[cartaPrimera].info==cartas_array[cartaSegunda].info){
+				iguales = true;	
+				cartas++;
+				marcador.contador = cartas;
+				aciertos();
+			} else {
+				iguales = false;	
+			}
+			setTimeout(volteaCarta,1000);
+		}
+	}
+}
+function volteaCarta(){
+	if(cartas<pares.length){
+		if(iguales==false){	
+			cartas_array[cartaPrimera].dibuja();	
+			cartas_array[cartaSegunda].dibuja();
+		} else {
+			ctx.clearRect(cartas_array[cartaPrimera].x,cartas_array[cartaPrimera].y, cartas_array[cartaPrimera].ancho, cartas_array[cartaPrimera].largo);
+			ctx.clearRect(cartas_array[cartaSegunda].x,cartas_array[cartaSegunda].y, cartas_array[cartaSegunda].ancho, cartas_array[cartaSegunda].largo);
+			cartas_array[cartaPrimera].x = -1;
+			cartas_array[cartaSegunda].x = -1;	
+		}
+	}  else {
+		gameOver(true);
+	}
+	bandera = true;
+}
+function gameOver(resultado){
+	limpiaCanvas();
+	clearInterval(miReloj);
+	if (resultado) {
+		nota2.play();
+		gameOver1_rec.dibujar();
+		gameOver1_txt.dibujar();
+	} else {
+		nota3.play();
+		gameOver2_rec.dibujar();
+		gameOver2_txt.dibujar();
+		gameOver3_txt.dibujar();
+	}
+	//
+	//Definir el boton
+	//
+	var imagen = new Image();
+	imagen.src = "images/boton.png";
+	imagen.onload = function(){
+		ctx.drawImage(imagen, 
+			final_btn.x,
+			final_btn.y, 
+			final_btn.ancho, 
+			final_btn.alto);
+		gameOver4_txt.dibujar();
+		canvas.addEventListener("click", botonReinicio, false);
+	}
+}
+function botonReinicio(e){
+	var pos = ajusta(e.clientX, e.clientY);
+	var xx = pos.x;
+	var yy = pos.y;		
+	//
+	if((xx>final_btn.x)&&
+		(xx<final_btn.x+final_btn.ancho)&&
+		(yy>final_btn.y)&&
+		(yy<final_btn.y+final_btn.alto)){
+			contador = 0;
+			cartas = 0;
+			reloj.reiniciar();
+			marcador.reiniciar();
+			canvas.removeEventListener("click", botonReinicio);
+			jugar();
+	}
+}
+function limpiaCanvas(){
+	ctx.clearRect(0,0, canvas.width, canvas.height);
+}
+function pinta(carta){
+	ctx.fillStyle = colorDelante;
+	ctx.fillRect(carta.x, carta.y, carta.ancho, carta.largo); 
+	var imagen = new Image();
+	imagen.src = carta.img;
+	imagen.onload = function(){
+		ctx.drawImage(imagen, carta.x, carta.y, carta.ancho, carta.largo);	
+	}
+}
+function aciertos(){
+	nota5.play();
+	marcador.dibujar();
+}
+function inicio(){
+	var imagen = new Image();
+	imagen.src = "images/fondo.jpg";
+	imagen.onload = function(){
+		//
+		ctx.drawImage(imagen, 
+		caratula.x,
+		caratula.y, 
+		caratula.ancho, 
+		caratula.alto);
+		//
+		imagen.src = "images/boton.png";
+		imagen.onload = function(){
+			ctx.drawImage(imagen, 
+				inicio_btn.x,
+				inicio_btn.y, 
+				inicio_btn.ancho, 
+				inicio_btn.alto);
+			inicio_txt.dibujar();
+			instrucciones.dibujar();
+			canvas.addEventListener("click", botonInicio, false);
+		}
+	}
+}
+function botonInicio(e){
+	var pos = ajusta(e.clientX, e.clientY);
+	var xx = pos.x;
+	var yy = pos.y;		
+	//
+	if((xx>inicio_btn.x)&&
+		(xx<inicio_btn.x+inicio_btn.ancho)&&
+		(yy>inicio_btn.y)&&
+		(yy<inicio_btn.y+inicio_btn.alto)){
+			nota1.play();
+			jugar();	
+	}
+}
+function jugar(){
+	canvas.addEventListener("click",selecciona,false);
+	canvas.removeEventListener("click", botonInicio);
+	limpiaCanvas();
+	tablero();
+	barajea();
+	aciertos();
+	instrucciones.dibujar();
+	reloj.dibujar();
+	miReloj = setInterval(ejecutaReloj, 1000); 
+}
+function ejecutaReloj(){
+	reloj.dibujar();
+	if(reloj.gameOver){
+		gameOver(false);
+	}
+}
+/*** TO DO ***/
+window.onload = function(){
+	canvas = document.getElementById("miCanvas");
+	if(canvas && canvas.getContext){
+		ctx = canvas.getContext("2d");
+		if(ctx){
+			caratula = new Elemento(0,0, canvas.width, canvas.height);
+			nota1 = document.getElementById("nota1");
+			nota2 = document.getElementById("nota2");
+			nota3 = document.getElementById("nota3");
+			nota4 = document.getElementById("nota4");
+			nota5 = document.getElementById("nota5");
+			inicio();
+		} else {
+			alert("Error al crear tu contexto");	
+		}
+	}
+}
+</script>
+</head>
+
+<body>
+<canvas id="miCanvas" width="960px" height="600px">
+Tu navegador no soporta CANVAS
+</canvas>
+<audio id="nota1">
+<source src="sonidos/intro.mp3">
+</audio>
+<audio id="nota2">
+<source src="sonidos/gameOver.mp3">
+</audio>
+<audio id="nota3">
+<source src="sonidos/error.mp3">
+</audio>
+<audio id="nota4">
+<source src="sonidos/clic.mp3">
+</audio>
+<audio id="nota5">
+<source src="sonidos/boing.mp3">
+</audio>
+</body>
+</html>

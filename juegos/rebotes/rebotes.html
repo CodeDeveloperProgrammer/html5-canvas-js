@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Breakout 07 | Colisiones</title>
+	<style>
+		*{
+			padding:0;
+			margin:0;
+		}
+		canvas{
+			background: green;
+			display: block;
+			margin:0 auto;
+			margin-top: 30px;
+		}
+	</style>
+	<script>
+		var canvas,ctx;
+		var radioBola=10;
+		//Coordenadas
+		var x,y;
+		//Velocidad
+		var dx = 2;
+		var dy = -2;
+		//Dimensiones del paddle
+		var paddleAltura = 10;
+		var paddleAncho = 75;
+		var paddleX;
+		//Control de las flechas
+		var ladrilloRenglon = 5;
+		var ladrilloColumna = 3;
+		var ladrilloAncho = 75;
+		var ladrilloAlto = 20;
+		var ladrilloPadding = 10;
+		var ladrilloOffsetArriba = 30;
+		var ladrilloOffsetIzquierda = 30;
+		//
+		var color = "white";
+		//
+		//Marcadores
+		var marcador = 0;
+		var vidas = 3;
+		//
+		//Banderas flechas
+		//
+		var flechaDerecha = flechaIzquierda = false;
+		//Ladrillos
+		var ladrillos = new Array();
+		for(c=0; c<ladrilloColumna; c++){
+			ladrillos[c] = new Array();
+			for(var r=0; r<ladrilloRenglon; r++){
+				ladrillos[c][r] = {x:0, y:0, status:1};
+			}
+		}
+		/*************
+		FUNCIONES
+		*************/
+		//
+		//Pulsar tecla
+		//
+		function pulsarTecla(e) {
+			if (e.keyCode==39) {
+				flechaDerecha = true;
+			} else if(e.keyCode == 37){
+				flechaIzquierda = true;
+			}
+		}
+		//
+		//Soltar tecla
+		//
+		function soltarTecla(e) {
+			if (e.keyCode==39) {
+				flechaDerecha = false;
+			} else if(e.keyCode == 37){
+				flechaIzquierda = false;
+			}
+		}
+		//
+		//Mover ratón
+		//
+		function moverRaton(e) {
+			var relativoX = e.clientX - canvas.offsetLeft;
+			if (relativoX >0 && relativoX<canvas.width) {
+				paddleX = relativoX-paddleAncho/2;
+			}
+		}
+		//
+		//DetectarColision
+		//
+		function detectarColision() {
+			for(var c=0; c<ladrilloColumna; c++){
+				for(var r=0; r<ladrilloRenglon; r++){
+					var ladrillo = ladrillos[c][r];
+					if(ladrillo.status==1){
+						if (x > ladrillo.x && x <ladrillo.x + ladrilloAncho &&
+						    y > ladrillo.y && y <ladrillo.y + ladrilloAlto ) {
+							dy = -dy;
+							ladrillo.status = 0;
+							marcador++;
+							if (marcador == ladrilloRenglon*ladrilloColumna) {
+								alert("FELICIDADES, GANASTE");
+								document.location.reload();
+							}
+						}
+					}
+				}
+			}
+			
+		}
+		//
+		//Dibuja bola
+		//
+		function dibujarBola() {
+			ctx.beginPath();
+			ctx.arc(x,y,radioBola,0,Math.PI*2);
+			ctx.fillStyle = color;
+			ctx.fill();
+			ctx.closePath();
+		}
+		//
+		//Dibuja paddle
+		//
+		function dibujarPaddle() {
+			ctx.beginPath();
+			ctx.rect(paddleX,canvas.height-paddleAltura,paddleAncho,paddleAltura);
+			ctx.fillStyle = color;
+			ctx.fill();
+			ctx.closePath();
+		}
+		//
+		//Dibuja ladrillos
+		//
+		function dibujarLadrillos() {
+			for(var c=0; c<ladrilloColumna; c++){
+				for(var r=0; r<ladrilloRenglon; r++){
+					if (ladrillos[c][r].status==1) {
+						var ladrilloX = (r*(ladrilloAncho+ladrilloPadding))+ladrilloOffsetIzquierda;
+						var ladrilloY = (c*(ladrilloAlto+ladrilloPadding))+ladrilloOffsetArriba;
+						//Copiamos al objeto
+						ladrillos[c][r].x = ladrilloX;
+						ladrillos[c][r].y = ladrilloY;
+						//Dibuja ladrillo
+						ctx.beginPath();
+						ctx.rect(ladrilloX,ladrilloY,ladrilloAncho, ladrilloAlto);
+						ctx.fillStyle = color;
+						ctx.fill();
+						ctx.closePath();
+					}
+				}
+			}
+		}
+		//
+		//Dibuja Marcador
+		//
+		function dibujarMarcador() {
+			ctx.font = "16px Arial";
+			ctx.fillStyle = color;
+			ctx.fillText("Marcador: "+marcador,8,20);
+		}
+		//
+		//Dibuja Vidas
+		//
+		function dibujarVidas() {
+			ctx.font = "16px Arial";
+			ctx.fillStyle = color;
+			ctx.fillText("Vidas: "+vidas,canvas.width-65,20);
+		}
+		//
+		//Dibujar
+		//
+		function dibujar() {
+			//console.log("dibujar");
+			ctx.clearRect(0,0,canvas.width,canvas.height);
+			dibujarLadrillos();
+			dibujarBola();
+			dibujarPaddle();
+			dibujarMarcador();
+			dibujarVidas();
+			detectarColision();
+			//
+			//Cambiar de dirección
+			//
+			if (x+dx > canvas.width-radioBola || x + dx < radioBola) {
+				dx = -dx;
+			}
+			//Colisión pared superior
+			if (y+dy < radioBola) {
+				dy = -dy;
+			} 
+			//Colisión con la pared inferior
+			else if (y+dy > canvas.height-radioBola) {
+				//Verifica si chocó con el paddle
+				if (x > paddleX && x < paddleX+paddleAncho) {
+					dy = -dy;
+				} 
+				//Colisionó con la pared inferior
+				else {
+					vidas--;
+					if (!vidas) {
+						alert("FIN DEL JUEGO");
+						document.location.reload();
+					} else {
+						x = canvas.width / 2;
+						y = canvas.height-30;
+						dx = 3;
+						dy = -3;
+						paddleX = (canvas.width-paddleAncho)/2;
+					}
+				}
+			}
+			//
+			//Mueve derecha
+			//
+			if (flechaDerecha && paddleX < canvas.width-paddleAncho) {
+				paddleX += 7;
+			}
+			//
+			//Mueve izquierda
+			//
+			else if (flechaIzquierda && paddleX > 0) {
+				paddleX -= 7;
+			}
+			//Incrementar las coordenas
+			x += dx;
+			y += dy;
+			//
+			requestAnimationFrame(dibujar);
+		}
+		//
+		//Inicio
+		//
+		window.onload = function () {
+			//console.log("inicio");
+			canvas = document.getElementById("canvas");
+			ctx = canvas.getContext("2d");
+			//
+			//Coordenadas
+			//
+			x = canvas.width / 2;
+			y = canvas.height -30;
+			paddleX = (canvas.width-paddleAncho)/2;
+			//
+			document.addEventListener("keydown",pulsarTecla,false);
+			document.addEventListener("keyup",soltarTecla,false);
+			document.addEventListener("mousemove",moverRaton,false);
+			//
+			dibujar();
+		}
+
+	</script>
+</head>
+<body>
+<canvas id="canvas" width="480" height="320"></canvas>
+</body>
+</html>

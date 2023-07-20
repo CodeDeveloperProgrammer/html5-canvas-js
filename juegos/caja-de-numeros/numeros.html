@@ -1,0 +1,219 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>CANVAS | Caja de números</title>
+<style>
+	body{
+		width:  960px;
+		margin: 0 auto;
+		text-align: center;
+	}
+	canvas{
+		background:green;
+		border: solid yellow 3px;
+	}
+</style>
+<script>
+/*************
+Variables
+**************/
+game = {
+	canvas: null,
+	ctx: null,
+	caratula: true,
+	clic: null,
+	gameOver: null,
+	inicioX: 280,
+	inicioY: 50,
+	renglones: 4,
+	columnas: 4,
+	numFichas: 0,
+	ancho: 100,
+	b: 0,
+	fichas_array: new Array(),
+	colorFicha: "white",
+	colorMarco: "black",
+}
+/*************
+OBJETOS
+**************/
+function Ficha(x,y, ren, col, w, i){
+	this.x = x;
+	this.y = y;
+	this.w = w;
+	this.i = i;
+	this.ren = ren;
+	this.col = col;
+	this.dibujar = function(){
+		game.ctx.save();
+		game.ctx.fillStyle = game.colorFicha;
+		game.ctx.strokeStyle = game.colorMarco;
+		game.ctx.fillRect(this.x, this.y, this.w, this.w);
+		game.ctx.strokeRect(this.x, this.y, this.w, this.w);
+		//
+		game.ctx.font = "bold 40px Comic";
+		game.ctx.fillStyle = game.colorMarco;
+		game.ctx.textAlign = "center";
+		if(this.i<game.numFichas){
+			game.ctx.fillText(this.i, this.x+this.w/2, this.y+this.w/2+10);
+		} else {
+			game.ctx.fillText("", this.x+this.w/2, this.y+this.w/2+10);
+		}
+		game.ctx.restore();
+	};	
+}
+/**************
+ * Funciones
+ * ************/
+const caratula=()=>{
+	let imagen = new Image();
+	imagen.src = "imagenes/cajita.png";
+	imagen.onload =()=>{
+		game.ctx.drawImage(imagen,0,0);
+	}
+}
+const seleccionar=(e)=>{
+	if(game.caratula){
+		inicio();
+	} else {
+		let {x,y} = ajustar(e.clientX, e.clientY);
+		let ficha, i;
+		//
+		for(i=0; i<game.fichas_array.length; i++){
+			ficha = game.fichas_array[i];
+			if((x>ficha.x)&&
+			(x<ficha.x+ficha.w)&&
+			(y>ficha.y)&&
+			(y<ficha.y+ficha.w)){
+				break;	
+			}
+		}
+		if(i<game.numFichas){
+			if(game.fichas_array[i].i != game.numFichas){
+				buscar(i);
+				verificar();
+			}
+		}
+	}
+}
+const ajustar = (xx, yy) => {
+	let pos = game.canvas.getBoundingClientRect();
+	let x = xx - pos.left;
+	let y = yy - pos.top;
+	return {x, y}	
+}
+const inicio = () =>{
+	game.ctx.clearRect(0,0,game.canvas.width,game.canvas.height);
+	game.caratula = false;
+	game.clic.play();
+	dibujarTablero();
+	barajar();
+}
+const barajar = () =>{
+	let i,r;
+	for(i=0; i<100; i++){
+		r = Math.floor(Math.random()*game.numFichas);
+		buscar(r);
+	}
+}
+const buscar = (ficha) =>{
+	let ren2, col2;
+	let ren = game.fichas_array[ficha].ren;
+	let col = game.fichas_array[ficha].col;
+	let bandera = false;
+	//Arriba
+	ren2 = ren - 1;
+	if(ren2 > -1) bandera = intercambiar(ren,col,ren2,col);
+	//Abajo
+	ren2 = ren + 1;
+	if(ren2 < game.renglones) bandera = intercambiar(ren,col,ren2,col);
+	//Derecha
+	col2 = col + 1;
+	if(col2 < game.columnas) bandera = intercambiar(ren,col,ren,col2);
+	//Izquierda
+	col2 = col - 1;
+	if(col2 > -1) bandera = intercambiar(ren,col,ren,col2);
+}
+const intercambiar=(ren,col,ren2,col2)=>{
+	let i = col + ren * game.renglones;
+	let j = col2 + ren2 * game.renglones;
+	let cambio = false;
+	if(game.fichas_array[j].i==game.numFichas){
+		game.fichas_array[j].i = game.fichas_array[i].i;
+		game.fichas_array[i].i = game.numFichas;
+		cambio = true;
+		dibujarTablero();
+		game.clic.play();
+	}
+	return cambio;
+}
+const dibujarTablero=()=>{
+	let i,j,x,y,ii;
+	for (i = 0; i < game.renglones; i++) {
+		for (j = 0; j < game.columnas; j++) {
+			x = game.inicioX + game.ancho * j;
+			y = game.inicioY + game.ancho * i;
+			ii = j + i*game.renglones;
+			//Arreglos
+			game.fichas_array.push(new Ficha(x,y,i,j,game.ancho,ii+1));
+			game.fichas_array[ii].dibujar();
+		}
+	}
+}
+const verificar=()=>{
+	let fichasCorrectas = 0
+	for (let i = 0; i < game.numFichas; i++) {
+		console.log(i,game.fichas_array[i].i-1);
+		if(game.fichas_array[i].i-1==i) fichasCorrectas++;
+	}
+	console.log("fichas correctas",fichasCorrectas);
+	if (fichasCorrectas==game.numFichas) {
+		gameOver();
+	}
+}
+const gameOver = () =>{
+	game.ctx.fillStyle = "black";	
+	game.ctx.clearRect(0,470,game.canvas.width,100);
+	game.ctx.font = "bold 40px Courier";
+	game.ctx.textAlign = "center";
+	game.ctx.fillText("¡Felicidades!", game.canvas.width/2, 480);
+	game.gameOver.play();
+	game.canvas.removeEventListener("click",seleccionar,false);
+}
+/**************
+ * Inicio
+ * ************/
+window.onload=function(){
+	game.canvas = document.getElementById("canvas");
+	if(game.canvas && game.canvas.getContext){
+		game.ctx = canvas.getContext("2d");
+		if (game.ctx) {
+			game.numFichas = game.renglones * game.columnas;
+			game.clic = document.getElementById("clic");
+			game.gameOver = document.getElementById("gameOver");
+			caratula();
+			game.canvas.addEventListener("click",seleccionar,false);
+		} else{
+			alert("NO cuentas con CANVAS")
+		};
+	}
+}	
+</script>
+</head>
+
+<body>
+<h1>Caja de números</h1>
+<canvas id="canvas" width="960" height="500">
+	Tu navegador no soporta el canvas de HTML5
+</canvas>
+<audio id="clic">
+	<source src="sonidos/clic.mp3">
+	<source src="sonidos/clic.ogg">
+</audio>
+<audio id="gameOver">
+	<source src="sonidos/gameOver.mp3">
+	<source src="sonidos/gameOver.ogg">
+</audio>
+</body>
+</html>
